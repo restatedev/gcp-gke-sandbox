@@ -56,7 +56,8 @@ resource "kubectl_manifest" "cluster_issuer_public" {
             }
             dns01 = {
               cloudDNS = {
-                project = var.project_id
+                project        = var.project_id
+                hostedZoneName = google_dns_managed_zone.public[0].name
               }
             }
           }
