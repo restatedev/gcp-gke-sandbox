@@ -65,7 +65,7 @@ data "google_compute_network" "existing" {
 }
 
 locals {
-  network          = local.create_vpc ? google_compute_network.main[0].id : data.google_compute_network.existing[0].id
+  network           = local.create_vpc ? google_compute_network.main[0].id : data.google_compute_network.existing[0].id
   network_self_link = local.create_vpc ? google_compute_network.main[0].self_link : data.google_compute_network.existing[0].self_link
-  subnetwork       = local.create_vpc ? google_compute_subnetwork.gke[0].id : var.subnetwork
+  subnetwork        = local.create_vpc ? google_compute_subnetwork.gke[0].id : var.subnetwork
 }

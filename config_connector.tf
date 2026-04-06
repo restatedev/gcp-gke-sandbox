@@ -40,7 +40,7 @@ resource "kubectl_manifest" "config_connector" {
       name = "configconnector.core.cnrm.cloud.google.com"
     }
     spec = {
-      mode                = "cluster"
+      mode                 = "cluster"
       googleServiceAccount = google_service_account.config_connector.email
     }
   })

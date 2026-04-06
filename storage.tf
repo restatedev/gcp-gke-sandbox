@@ -26,8 +26,8 @@ resource "kubernetes_storage_class_v1" "hyperdisk_balanced" {
   allow_volume_expansion = true
 
   parameters = {
-    type                              = "hyperdisk-balanced"
+    type                               = "hyperdisk-balanced"
     "provisioned-throughput-on-create" = var.hyperdisk_throughput
-    "provisioned-iops-on-create"      = var.hyperdisk_iops
+    "provisioned-iops-on-create"       = var.hyperdisk_iops
   }
 }

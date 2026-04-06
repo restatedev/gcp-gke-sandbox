@@ -11,10 +11,10 @@ resource "google_dns_managed_zone" "public" {
 resource "google_dns_managed_zone" "internal" {
   count = local.internal_domain != "" ? 1 : 0
 
-  project     = var.project_id
-  name        = "${local.cluster_name}-internal"
-  dns_name    = "${local.internal_domain}."
-  visibility  = "private"
+  project    = var.project_id
+  name       = "${local.cluster_name}-internal"
+  dns_name   = "${local.internal_domain}."
+  visibility = "private"
 
   private_visibility_config {
     networks {

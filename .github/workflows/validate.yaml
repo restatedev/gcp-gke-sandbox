@@ -1,0 +1,28 @@
+---
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Format check
+        run: terraform fmt -check -recursive -diff .
+      - name: Validate
+        if: ${{ !cancelled() }}
+        run: |
+          echo "::group::root"
+          terraform init -backend=false
+          terraform validate
+          echo "::endgroup::"

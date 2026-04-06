@@ -72,10 +72,10 @@ resource "google_container_cluster" "autopilot" {
 # Single node pool for all workloads (infra and restate pods).
 # Configurable machine type; defaults to x86, set to c4a family for ARM.
 resource "google_container_node_pool" "default" {
-  project    = var.project_id
-  name       = "default"
-  cluster    = google_container_cluster.autopilot.name
-  location   = var.region
+  project  = var.project_id
+  name     = "default"
+  cluster  = google_container_cluster.autopilot.name
+  location = var.region
 
   initial_node_count = var.node_initial_count
 
