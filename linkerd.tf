@@ -36,6 +36,14 @@ resource "helm_release" "cert_manager" {
         "iam.gke.io/gcp-service-account" = google_service_account.cert_manager.email
       }
     }
+    # Use public DNS for ACME DNS-01 propagation checks. GCP Cloud DNS private
+    # zones shadow the entire subtree within the VPC, so cert-manager's default
+    # in-cluster resolver returns NXDOMAIN for _acme-challenge records that are
+    # in the public zone but under a domain with a private zone overlay.
+    extraArgs = [
+      "--dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53",
+      "--dns01-recursive-nameservers-only=true",
+    ]
   })]
 
   depends_on = [google_container_cluster.autopilot, google_container_node_pool.default]
