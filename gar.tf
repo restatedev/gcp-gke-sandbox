@@ -6,18 +6,37 @@ resource "google_artifact_registry_repository" "main" {
   labels        = local.default_labels
 }
 
-# Image pulls are performed by the kubelet using the node pool's SA, not
-# the pod's Workload Identity SA. Grant the default Compute Engine SA
-# reader access on the repo -- required on projects created after May 2024
-# where the automatic Editor grant is disabled by org policy.
-data "google_compute_default_service_account" "default" {
-  project = var.project_id
+# Dedicated GKE node SA — replaces reliance on the default Compute Engine SA.
+# Customers may have restricted or removed the default SA's roles; a dedicated
+# SA with explicit least-privilege permissions avoids this issue.
+resource "google_service_account" "gke_nodes" {
+  project      = var.project_id
+  account_id   = "${substr(var.nuon_id, 0, 20)}-gke"
+  display_name = "GKE nodes for ${var.nuon_id}"
 }
 
-resource "google_artifact_registry_repository_iam_member" "node_pull" {
+resource "google_artifact_registry_repository_iam_member" "gke_nodes_ar_reader" {
   project    = var.project_id
   location   = var.region
   repository = google_artifact_registry_repository.main.repository_id
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+  member     = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_nodes_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_nodes_metric_writer" {
+  project = var.project_id
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
+}
+
+resource "google_project_iam_member" "gke_nodes_monitoring_viewer" {
+  project = var.project_id
+  role    = "roles/monitoring.viewer"
+  member  = "serviceAccount:${google_service_account.gke_nodes.email}"
 }

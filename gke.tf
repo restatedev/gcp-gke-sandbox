@@ -72,10 +72,10 @@ resource "google_container_cluster" "autopilot" {
 # Single node pool for all workloads (infra and restate pods).
 # Configurable machine type; defaults to x86, set to c4a family for ARM.
 resource "google_container_node_pool" "default" {
-  project    = var.project_id
-  name       = "default"
-  cluster    = google_container_cluster.autopilot.name
-  location   = var.region
+  project  = var.project_id
+  name     = "default"
+  cluster  = google_container_cluster.autopilot.name
+  location = var.region
 
   initial_node_count = var.node_initial_count
 
@@ -91,9 +91,10 @@ resource "google_container_node_pool" "default" {
   }
 
   node_config {
-    machine_type = var.node_machine_type
-    disk_size_gb = var.node_disk_size_gb
-    disk_type    = var.node_disk_type
+    machine_type    = var.node_machine_type
+    disk_size_gb    = var.node_disk_size_gb
+    disk_type       = var.node_disk_type
+    service_account = google_service_account.gke_nodes.email
 
     workload_metadata_config {
       mode = "GKE_METADATA"
