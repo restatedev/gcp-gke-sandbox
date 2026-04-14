@@ -34,6 +34,24 @@ variable "cluster_name" {
   default     = ""
 }
 
+variable "enable_nap" {
+  description = "Enable GKE Node Auto-Provisioning (NAP). When enabled, GKE can create new node pools automatically based on pending pod requirements."
+  type        = bool
+  default     = false
+}
+
+variable "nap_max_cpu" {
+  description = "Maximum total CPU cores across all NAP-created node pools."
+  type        = number
+  default     = 256
+}
+
+variable "nap_max_memory_gb" {
+  description = "Maximum total memory (GiB) across all NAP-created node pools."
+  type        = number
+  default     = 1024
+}
+
 variable "node_machine_type" {
   description = "Machine type for the node pool. Use c4a family for ARM."
   type        = string

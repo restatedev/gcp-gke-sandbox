@@ -66,6 +66,48 @@ resource "google_container_cluster" "autopilot" {
     }
   }
 
+  # Node Auto-Provisioning — when enabled, GKE creates node pools on-demand
+  # based on pending pod requirements. The ComputeClass CRD (applied by the
+  # region operator) controls machine family preferences and node config.
+  dynamic "cluster_autoscaling" {
+    for_each = var.enable_nap ? [1] : []
+    content {
+      autoscaling_profile = "OPTIMIZE_UTILIZATION"
+
+      resource_limits {
+        resource_type = "cpu"
+        minimum       = 0
+        maximum       = var.nap_max_cpu
+      }
+      resource_limits {
+        resource_type = "memory"
+        minimum       = 0
+        maximum       = var.nap_max_memory_gb
+      }
+
+      auto_provisioning_defaults {
+        service_account = google_service_account.gke_nodes.email
+        disk_type       = var.node_disk_type
+        disk_size       = var.node_disk_size_gb
+        image_type      = "COS_CONTAINERD"
+
+        management {
+          auto_repair  = true
+          auto_upgrade = true
+        }
+
+        shielded_instance_config {
+          enable_secure_boot          = false
+          enable_integrity_monitoring = true
+        }
+
+        oauth_scopes = [
+          "https://www.googleapis.com/auth/cloud-platform",
+        ]
+      }
+    }
+  }
+
   resource_labels = local.default_labels
 }
 
