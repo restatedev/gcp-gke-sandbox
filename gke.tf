@@ -105,10 +105,6 @@ resource "google_container_cluster" "autopilot" {
           enable_integrity_monitoring = true
         }
 
-        workload_metadata_config {
-          mode = "GKE_METADATA"
-        }
-
         oauth_scopes = [
           "https://www.googleapis.com/auth/cloud-platform",
         ]
