@@ -72,6 +72,10 @@ resource "google_container_cluster" "autopilot" {
   dynamic "cluster_autoscaling" {
     for_each = var.enable_nap ? [1] : []
     content {
+      # Affects both the default pool and NAP pools — more aggressive
+      # scale-down than the default BALANCED profile. Ideally this would
+      # be set independently of NAP, but autoscaling_profile can only be
+      # set inside cluster_autoscaling.
       autoscaling_profile = "OPTIMIZE_UTILIZATION"
 
       resource_limits {
@@ -99,6 +103,10 @@ resource "google_container_cluster" "autopilot" {
         shielded_instance_config {
           enable_secure_boot          = false
           enable_integrity_monitoring = true
+        }
+
+        workload_metadata_config {
+          mode = "GKE_METADATA"
         }
 
         oauth_scopes = [
