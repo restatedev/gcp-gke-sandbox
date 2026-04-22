@@ -65,6 +65,7 @@ See [docs/connecting-to-gke.md](docs/connecting-to-gke.md) for connecting to the
 | `public_root_domain` | Public DNS domain | `""` | no |
 | `internal_root_domain` | Internal DNS domain | `""` | no |
 | `additional_namespaces` | Extra K8s namespaces | `[]` | no |
+| `kyverno_policy_dir` | Path to Kyverno policy manifests | `"./kyverno-policies"` | no |
 | `deletion_protection` | Cluster deletion protection | `false` | no |
 | `labels` | Resource labels | `{}` | no |
 | `tags` | Nuon resource tags | `{}` | no |

@@ -172,6 +172,15 @@ variable "additional_namespaces" {
   default     = []
 }
 
+# -----------------------------------------------------------
+# Kyverno policies
+# -----------------------------------------------------------
+
+variable "kyverno_policy_dir" {
+  description = "Path to a directory with Kyverno policy manifests."
+  type        = string
+  default     = "./kyverno-policies"
+}
 
 # -----------------------------------------------------------
 # Storage
