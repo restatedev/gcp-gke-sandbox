@@ -36,8 +36,8 @@ variable "cluster_name" {
 
 variable "enable_nap" {
   description = "Enable GKE Node Auto-Provisioning (NAP). When enabled, GKE can create new node pools automatically based on pending pod requirements."
-  type        = bool
-  default     = false
+  type        = string
+  default     = "false"
 }
 
 variable "nap_max_cpu" {

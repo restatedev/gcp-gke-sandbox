@@ -70,7 +70,7 @@ resource "google_container_cluster" "autopilot" {
   # based on pending pod requirements. The ComputeClass CRD (applied by the
   # region operator) controls machine family preferences and node config.
   dynamic "cluster_autoscaling" {
-    for_each = var.enable_nap ? [1] : []
+    for_each = tobool(var.enable_nap) ? [1] : []
     content {
       # Affects both the default pool and NAP pools — more aggressive
       # scale-down than the default BALANCED profile. Ideally this would
