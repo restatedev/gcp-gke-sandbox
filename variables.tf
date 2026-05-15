@@ -178,21 +178,9 @@ variable "additional_namespaces" {
 # -----------------------------------------------------------
 
 variable "enable_hyperdisk" {
-  description = "Whether to create the hyperdisk-balanced StorageClass (required for ARM/c4a)."
+  description = "Whether to create the hyperdisk-balanced StorageClass and VolumeAttributesClass tiers."
   type        = bool
   default     = false
-}
-
-variable "hyperdisk_iops" {
-  description = "Provisioned IOPS for hyperdisk-balanced StorageClass."
-  type        = string
-  default     = "10000"
-}
-
-variable "hyperdisk_throughput" {
-  description = "Provisioned throughput for hyperdisk-balanced StorageClass."
-  type        = string
-  default     = "1500Mi"
 }
 
 # -----------------------------------------------------------
