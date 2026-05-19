@@ -43,10 +43,10 @@ locals {
   }
 }
 
-resource "kubernetes_manifest" "hyperdisk_vac" {
+resource "kubectl_manifest" "hyperdisk_vac" {
   for_each = var.enable_hyperdisk ? local.hyperdisk_vacs : {}
 
-  manifest = {
+  yaml_body = yamlencode({
     apiVersion = "storage.k8s.io/v1"
     kind       = "VolumeAttributesClass"
     metadata = {
@@ -57,5 +57,7 @@ resource "kubernetes_manifest" "hyperdisk_vac" {
       iops       = each.value.iops
       throughput = each.value.throughput
     }
-  }
+  })
+
+  depends_on = [google_container_cluster.autopilot]
 }
