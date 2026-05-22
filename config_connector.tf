@@ -15,10 +15,44 @@ resource "google_service_account" "config_connector" {
 }
 
 # Allow Config Connector to manage IAM bindings on the restate GCP SA.
-resource "google_service_account_iam_member" "config_connector_sa_admin" {
+# This is the install SA used by the restate-operator's v2.3.0 Workload Identity
+# binding automation. Do not remove: removing it would break operator-driven WI
+# bindings on the install-shared SA even after the per-env identity feature lands.
+resource "google_service_account_iam_member" "config_connector_restate_sa_admin" {
   service_account_id = google_service_account.restate.name
   role               = "roles/iam.serviceAccountAdmin"
   member             = "serviceAccount:${google_service_account.config_connector.email}"
+}
+
+# Project-level permissions for Config Connector to create and destroy per-env
+# GCP service accounts (one per Restate Cloud environment) and to manage their
+# Workload Identity bindings. The matching bucket-scoped permissions needed
+# to attach prefix-conditional GCS bindings live in the restate-gcs-bucket
+# component (nuon-byoc) and reference google_service_account.config_connector.email.
+#
+# Least-privilege over roles/iam.serviceAccountAdmin: the predefined role grants
+# undelete, disable, enable, update, actAs and more that Config Connector never
+# exercises for the per-env identity flow.
+resource "google_project_iam_custom_role" "config_connector_env_sa_admin" {
+  project     = var.project_id
+  role_id     = replace("${var.nuon_id}_cc_env_sa_admin", "-", "_")
+  title       = "${var.nuon_id} Config Connector per-env SA admin"
+  description = "Permissions Config Connector needs to provision per-environment GCP service accounts and their Workload Identity bindings."
+  stage       = "GA"
+
+  permissions = [
+    "iam.serviceAccounts.create",
+    "iam.serviceAccounts.delete",
+    "iam.serviceAccounts.get",
+    "iam.serviceAccounts.getIamPolicy",
+    "iam.serviceAccounts.setIamPolicy",
+  ]
+}
+
+resource "google_project_iam_member" "config_connector_env_sa_admin" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.config_connector_env_sa_admin.id
+  member  = "serviceAccount:${google_service_account.config_connector.email}"
 }
 
 # Workload Identity binding so the Config Connector K8s SA can act as the GCP SA.

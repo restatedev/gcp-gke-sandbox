@@ -62,6 +62,7 @@ output "workload_identity" {
   value = {
     restate_sa_email          = google_service_account.restate.email
     secrets_accessor_sa_email = google_service_account.secrets_accessor.email
+    config_connector_sa_email = google_service_account.config_connector.email
   }
 }
 
