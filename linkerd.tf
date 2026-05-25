@@ -136,6 +136,16 @@ resource "helm_release" "linkerd_control_plane" {
       name  = "identity.issuer.tls.keyPEM"
       value = tls_private_key.linkerd_issuer.private_key_pem
     },
+    # Run the proxy as a Kubernetes native sidecar (init container with
+    # restartPolicy: Always). Required so that Job pods (restate-wi-canary)
+    # terminate when the main container exits and the Job's backoffLimit can
+    # retry. Without this, the proxy never exits, the pod sticks 1/2 NotReady,
+    # and a transient first-attempt failure (e.g. WI binding propagation race)
+    # leaves the env stuck indefinitely.
+    {
+      name  = "proxy.nativeSidecar"
+      value = "true"
+    },
   ]
 
   depends_on = [helm_release.linkerd_crds]
