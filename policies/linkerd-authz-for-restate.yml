@@ -1,0 +1,268 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: linkerd-authz-for-restate
+  annotations:
+    policies.kyverno.io/title: Linkerd Authorization for Restate Namespaces
+    policies.kyverno.io/category: Linkerd, Service Mesh, Security
+    policies.kyverno.io/subject: Namespace
+    policies.kyverno.io/minversion: "1.6.0"
+    policies.kyverno.io/description: >-
+      This policy generates Linkerd Server, HTTPRoute, and AuthorizationPolicy
+      resources for Restate namespaces to control ingress traffic. It allows:
+      - Restate pods to communicate with each other on port 5122
+      - Cloud ingress to reach Restate on ports 8080, 9070, and 5122
+      - vmagent to scrape /metrics on port 5122
+      - Kubelet health probes on /health (port 9070) from any source
+# Keep the generated Linkerd kinds and apiVersions in sync with the active CRD
+# discovery barrier in the AWS sandbox repo before changing this policy.
+spec:
+  validationFailureAction: Enforce
+  generateExisting: true
+  rules:
+    # Servers
+    - name: generate-server-node
+      match: &restate-ns-match
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              selector:
+                matchLabels:
+                  app.kubernetes.io/name: restate
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: Server
+        name: restate-node
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: restate
+            port: 5122
+
+    - name: generate-server-ingress
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: Server
+        name: restate-ingress
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: restate
+            port: 8080
+
+    - name: generate-server-admin
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: Server
+        name: restate-admin
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: restate
+            port: 9070
+
+    # HTTPRoutes for port 5122 (restate-node)
+    - name: generate-metrics-route
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: HTTPRoute
+        name: restate-node-metrics
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            parentRefs:
+              - name: restate-node
+                kind: Server
+                group: policy.linkerd.io
+            rules:
+              - matches:
+                  - path:
+                      type: PathPrefix
+                      value: /metrics
+
+    - name: generate-node-catchall-route
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: HTTPRoute
+        name: restate-node-other
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            parentRefs:
+              - name: restate-node
+                kind: Server
+                group: policy.linkerd.io
+            rules:
+              - matches:
+                  - path:
+                      type: PathPrefix
+                      value: /
+
+    # HTTPRoutes for port 9070 (restate-admin)
+    - name: generate-health-route
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: HTTPRoute
+        name: restate-admin-health
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            parentRefs:
+              - name: restate-admin
+                kind: Server
+                group: policy.linkerd.io
+            rules:
+              - matches:
+                  - path:
+                      type: Exact
+                      value: /health
+
+    - name: generate-admin-catchall-route
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1beta3
+        kind: HTTPRoute
+        name: restate-admin-other
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            parentRefs:
+              - name: restate-admin
+                kind: Server
+                group: policy.linkerd.io
+            rules:
+              - matches:
+                  - path:
+                      type: PathPrefix
+                      value: /
+
+    # AuthorizationPolicies
+    - name: generate-authz-restate-self
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-restate-self
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: HTTPRoute
+              name: restate-node-other
+            requiredAuthenticationRefs:
+              - kind: ServiceAccount
+                name: restate
+                namespace: "{{request.object.metadata.name}}"
+
+    - name: generate-authz-cloud-ingress-node
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-cloud-ingress-node
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: HTTPRoute
+              name: restate-node-other
+            requiredAuthenticationRefs:
+              - kind: ServiceAccount
+                name: restate-cloud-ingress
+                namespace: restate-cloud-ingress
+
+    - name: generate-authz-cloud-ingress-ingress
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-cloud-ingress-ingress
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: Server
+              name: restate-ingress
+            requiredAuthenticationRefs:
+              - kind: ServiceAccount
+                name: restate-cloud-ingress
+                namespace: restate-cloud-ingress
+
+    - name: generate-authz-cloud-ingress-admin
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-cloud-ingress-admin
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: HTTPRoute
+              name: restate-admin-other
+            requiredAuthenticationRefs:
+              - kind: ServiceAccount
+                name: restate-cloud-ingress
+                namespace: restate-cloud-ingress
+
+    - name: generate-authz-health-probes
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-health-probes
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: HTTPRoute
+              name: restate-admin-health
+            requiredAuthenticationRefs: []
+
+    - name: generate-authz-vmagent-metrics
+      match: *restate-ns-match
+      generate:
+        apiVersion: policy.linkerd.io/v1alpha1
+        kind: AuthorizationPolicy
+        name: allow-vmagent-metrics
+        namespace: "{{request.object.metadata.name}}"
+        synchronize: true
+        data:
+          spec:
+            targetRef:
+              group: policy.linkerd.io
+              kind: HTTPRoute
+              name: restate-node-metrics
+            requiredAuthenticationRefs:
+              - kind: ServiceAccount
+                name: vmagent
+                namespace: observability

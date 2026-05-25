@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyverno:linkerd:manage
+  labels:
+    rbac.kyverno.io/aggregate-to-background-controller: "true"
+rules:
+  - apiGroups:
+      - policy.linkerd.io
+    resources:
+      - servers
+      - httproutes
+      - authorizationpolicies
+    verbs:
+      - create
+      - delete
+      - update

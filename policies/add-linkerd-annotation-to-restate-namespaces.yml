@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-linkerd-annotation-to-restate-namespaces
+  annotations:
+    policies.kyverno.io/title: Add Linkerd Injection to Restate Namespaces
+    policies.kyverno.io/category: Linkerd, Service Mesh
+    policies.kyverno.io/subject: Namespace
+    policies.kyverno.io/minversion: "1.6.0"
+    kyverno.io/kyverno-version: "1.6.0"
+    kyverno.io/kubernetes-version: "1.23"
+    policies.kyverno.io/description: >-
+      This policy automatically adds the 'linkerd.io/inject: enabled' annotation
+      to namespaces that are labeled with 'app.kubernetes.io/name=restate'.
+      This ensures that Linkerd sidecar injection is enabled for all pods
+      created in Restate namespaces.
+spec:
+  validationFailureAction: Enforce
+  generateExisting: true
+  rules:
+    - name: add-linkerd-injection-annotation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+              selector:
+                matchLabels:
+                  app.kubernetes.io/name: restate
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            annotations:
+              +(linkerd.io/inject): enabled
+              +(config.linkerd.io/default-inbound-policy): deny
