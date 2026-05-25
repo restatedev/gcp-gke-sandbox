@@ -123,6 +123,24 @@ resource "helm_release" "linkerd_control_plane" {
   namespace  = "linkerd"
   wait       = true
 
+  # GKE Autopilot allocates the services CIDR from Google's managed range
+  # (34.118.0.0/16 in practice), which isn't in linkerd's default
+  # clusterNetworks (RFC1918 + IPv6 link-local). Without adding it, linkerd
+  # treats traffic to ClusterIP services as off-cluster egress and routes
+  # it through the EgressNetwork, so in-cluster traffic loses identity-
+  # aware policy and observability gets skewed. The pod CIDR (10.160.0.0/14
+  # on the canary) is already covered by 10.0.0.0/8 in the defaults.
+  values = [yamlencode({
+    clusterNetworks = join(",", [
+      "10.0.0.0/8",
+      "100.64.0.0/10",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "fd00::/8",
+      google_container_cluster.autopilot.services_ipv4_cidr,
+    ])
+  })]
+
   set = [
     {
       name  = "identityTrustAnchorsPEM"
