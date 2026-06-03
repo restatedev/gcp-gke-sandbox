@@ -10,7 +10,7 @@ resource "helm_release" "kyverno" {
   name       = "kyverno"
   repository = "https://kyverno.github.io/kyverno/"
   chart      = "kyverno"
-  version    = "3.3.7"
+  version    = "3.5.3"
   namespace  = kubernetes_namespace_v1.kyverno.metadata[0].name
 
   values = [file("${path.module}/values/kyverno.yaml")]
