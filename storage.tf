@@ -52,6 +52,28 @@ resource "kubernetes_storage_class_v1" "hyperdisk_balanced_xfs" {
   mount_options = ["discard"]
 }
 
+# hyperdisk-balanced formatted xfs WITHOUT inline discard. TRIM/wear is managed
+# out-of-band (RocksDB SST File Manager) rather than inline, which avoids the
+# ~2.5x write-I/O amplification inline discard caused under RocksDB compaction
+# churn in benchmarking. fstype applies only to newly provisioned volumes.
+resource "kubernetes_storage_class_v1" "hyperdisk_balanced_xfs_nodiscard" {
+  count = var.enable_hyperdisk ? 1 : 0
+
+  metadata {
+    name = "hyperdisk-balanced-xfs-nodiscard"
+  }
+
+  storage_provisioner    = "pd.csi.storage.gke.io"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  reclaim_policy         = "Delete"
+  allow_volume_expansion = true
+
+  parameters = {
+    type                        = "hyperdisk-balanced"
+    "csi.storage.k8s.io/fstype" = "xfs"
+  }
+}
+
 # VolumeAttributesClass tiers for hyperdisk-balanced. IOPS values are powers of
 # 2 so the ladder is easy to reason about and map them to machine types;
 # throughput is paired to match VM-cap realities for the [c3d, c3] ComputeClass
