@@ -131,6 +131,24 @@ resource "helm_release" "linkerd_control_plane" {
   namespace  = "linkerd"
   wait       = true
 
+  # GKE Autopilot allocates the services CIDR from Google's managed range
+  # (34.118.0.0/16 in practice), which isn't in linkerd's default
+  # clusterNetworks (RFC1918 + IPv6 link-local). Without adding it, linkerd
+  # treats traffic to ClusterIP services as off-cluster egress and routes
+  # it through the EgressNetwork, so in-cluster traffic loses identity-
+  # aware policy and observability gets skewed. The pod CIDR (10.160.0.0/14
+  # on the canary) is already covered by 10.0.0.0/8 in the defaults.
+  values = [yamlencode({
+    clusterNetworks = join(",", [
+      "10.0.0.0/8",
+      "100.64.0.0/10",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "fd00::/8",
+      google_container_cluster.autopilot.services_ipv4_cidr,
+    ])
+  })]
+
   set = [
     {
       name  = "identityTrustAnchorsPEM"
@@ -143,6 +161,16 @@ resource "helm_release" "linkerd_control_plane" {
     {
       name  = "identity.issuer.tls.keyPEM"
       value = tls_private_key.linkerd_issuer.private_key_pem
+    },
+    # Run the proxy as a Kubernetes native sidecar (init container with
+    # restartPolicy: Always). Required so that Job pods (restate-wi-canary)
+    # terminate when the main container exits and the Job's backoffLimit can
+    # retry. Without this, the proxy never exits, the pod sticks 1/2 NotReady,
+    # and a transient first-attempt failure (e.g. WI binding propagation race)
+    # leaves the env stuck indefinitely.
+    {
+      name  = "proxy.nativeSidecar"
+      value = "true"
     },
   ]
 
