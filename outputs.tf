@@ -60,8 +60,9 @@ output "availability_zones" {
 
 output "workload_identity" {
   value = {
-    restate_sa_email          = google_service_account.restate.email
-    secrets_accessor_sa_email = google_service_account.secrets_accessor.email
+    restate_sa_email                  = google_service_account.restate.email
+    secrets_accessor_sa_email         = google_service_account.secrets_accessor.email
+    datadog_secrets_accessor_sa_email = var.enable_datadog_collector ? google_service_account.datadog_secrets_accessor[0].email : ""
   }
 }
 

@@ -183,6 +183,12 @@ variable "enable_hyperdisk" {
   default     = false
 }
 
+variable "enable_datadog_collector" {
+  description = "Whether to provision the dedicated Workload Identity SA for the standalone Datadog OTel collector. Driven by the datadog_collector_enabled install input; toggling it changes foundation IAM, so it takes effect on sandbox reprovision."
+  type        = bool
+  default     = false
+}
+
 # -----------------------------------------------------------
 # Access control
 # -----------------------------------------------------------
