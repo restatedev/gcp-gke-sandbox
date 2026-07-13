@@ -56,6 +56,22 @@ resource "google_container_cluster" "autopilot" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
+  # Disable NON-DEFAULT RBAC bindings that reference system:authenticated /
+  # system:unauthenticated / system:anonymous. This is GKE's documented
+  # remediation for org policy constraints/container.managed.disableRBACSystemBindings
+  # (the constraint targets non-default bindings). Requires GKE >= 1.30.1-gke.1283000.
+  #
+  # IMPORTANT: per GKE docs this does NOT remove the *default* Kubernetes bindings
+  # (system:basic-user, system:discovery, system:public-info-viewer) — verified on
+  # a fresh 1.35 cluster 2026-07-13: they persist by design and are not what the
+  # constraint targets, so API discovery / kubectl for existing tokens is
+  # unaffected. Updating an existing cluster does not delete pre-existing
+  # non-default bindings (we create none); those would need manual removal.
+  rbac_binding_config {
+    enable_insecure_binding_system_authenticated   = false
+    enable_insecure_binding_system_unauthenticated = false
+  }
+
   binary_authorization {
     evaluation_mode = "DISABLED"
   }
