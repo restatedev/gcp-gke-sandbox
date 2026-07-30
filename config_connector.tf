@@ -46,7 +46,7 @@ resource "kubectl_manifest" "config_connector" {
   })
 
   depends_on = [
-    google_container_cluster.autopilot,
+    null_resource.gke_api_ready,
     google_container_node_pool.default,
     google_service_account_iam_member.config_connector_wi,
   ]
