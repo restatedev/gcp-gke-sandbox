@@ -131,6 +131,25 @@ resource "helm_release" "linkerd_control_plane" {
   namespace  = "linkerd"
   wait       = true
 
+  # HA control plane (3 replicas + PDB + anti-affinity). The destination controller
+  # serves endpoint/policy discovery to every proxy, so a single replica restarting
+  # during a node roll can briefly hand out stale endpoints and widen the failfast window.
+  # Matches the AWS configuration.
+  values = [yamlencode({
+    controllerReplicas        = 3
+    enablePodAntiAffinity     = true
+    enablePodDisruptionBudget = true
+    controller = {
+      podDisruptionBudget = { maxUnavailable = 1 }
+    }
+    deploymentStrategy = {
+      rollingUpdate = {
+        maxUnavailable = 1
+        maxSurge       = "25%"
+      }
+    }
+  })]
+
   set = [
     {
       name  = "identityTrustAnchorsPEM"
