@@ -11,6 +11,8 @@ resource "kubernetes_storage_class_v1" "pd_ssd" {
   parameters = {
     type = "pd-ssd"
   }
+
+  depends_on = [null_resource.gke_api_ready]
 }
 
 resource "kubernetes_storage_class_v1" "hyperdisk_balanced" {
@@ -28,6 +30,8 @@ resource "kubernetes_storage_class_v1" "hyperdisk_balanced" {
   parameters = {
     type = "hyperdisk-balanced"
   }
+
+  depends_on = [null_resource.gke_api_ready]
 }
 
 # hyperdisk-balanced formatted xfs. fstype applies only to newly provisioned
@@ -48,6 +52,8 @@ resource "kubernetes_storage_class_v1" "hyperdisk_balanced_xfs" {
     type                        = "hyperdisk-balanced"
     "csi.storage.k8s.io/fstype" = "xfs"
   }
+
+  depends_on = [null_resource.gke_api_ready]
 }
 
 # VolumeAttributesClass tiers for hyperdisk-balanced. IOPS values are powers of
@@ -90,5 +96,5 @@ resource "kubectl_manifest" "hyperdisk_vac" {
     }
   })
 
-  depends_on = [google_container_cluster.autopilot]
+  depends_on = [null_resource.gke_api_ready]
 }
