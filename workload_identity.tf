@@ -38,6 +38,13 @@ resource "google_service_account_iam_member" "secrets_accessor_wi_tunnel" {
   depends_on         = [google_container_cluster.autopilot]
 }
 
+resource "google_service_account_iam_member" "secrets_accessor_wi_region_facts" {
+  service_account_id = google_service_account.secrets_accessor.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[restate-cloud-region-facts/restate-cloud-region-facts]"
+  depends_on         = [google_container_cluster.autopilot]
+}
+
 # Dedicated SA for the Datadog OTel collector, kept separate from secrets_accessor
 # so this third-party workload cannot read the region token. No secret bindings
 # here: the nuon-byoc datadog_secret component grants this SA accessor on only the
