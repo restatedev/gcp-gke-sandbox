@@ -61,8 +61,8 @@ resource "kubernetes_storage_class_v1" "hyperdisk_balanced_xfs" {
 # throughput is paired to match VM-cap realities for the [c3d, c3] ComputeClass
 # priority.
 # you get 3000 IOPS / 140 MiB/s for free on hyperdisk.
-# 1200 MiB/s is the max we can get on c3d machines.
-# 93,750 IOPS is the max IOPS for c3d.
+# 1200 MiB/s is the max on c3d-standard-30 and smaller; c3d-standard-60 and
+# above support more.
 locals {
   hyperdisk_vacs = {
     "hyperdisk-3k-1200"  = { iops = "3000", throughput = "1200Mi" }
@@ -73,6 +73,7 @@ locals {
     "hyperdisk-16k-400"  = { iops = "16000", throughput = "400Mi" } # 8-vCPU profiles
     "hyperdisk-16k-800"  = { iops = "16000", throughput = "800Mi" }
     "hyperdisk-16k-1200" = { iops = "16000", throughput = "1200Mi" }
+    "hyperdisk-16k-2400" = { iops = "16000", throughput = "2400Mi" } # 24+ vCPU / high-write profiles; needs c3d-standard-60+
     "hyperdisk-32k-800"  = { iops = "32000", throughput = "800Mi" }  # 16+ vCPU profiles / benchmarking
     "hyperdisk-32k-1200" = { iops = "32000", throughput = "1200Mi" } # warning: +$336/mo
     "hyperdisk-64k-1200" = { iops = "64000", throughput = "1200Mi" } # warning: +$816/mo
