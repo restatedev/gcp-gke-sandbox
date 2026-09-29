@@ -30,6 +30,19 @@ resource "google_container_cluster" "autopilot" {
     channel = var.release_channel
   }
 
+  # Release channels force node auto-upgrade on, so the recurring window is the
+  # only control over when GKE rotates nodes. Unset leaves maintenance unrestricted.
+  dynamic "maintenance_policy" {
+    for_each = var.maintenance_window_recurrence == "" ? [] : [1]
+    content {
+      recurring_window {
+        start_time = var.maintenance_window_start
+        end_time   = var.maintenance_window_end
+        recurrence = var.maintenance_window_recurrence
+      }
+    }
+  }
+
   # Private cluster — nodes have no public IPs; Cloud NAT handles egress.
   private_cluster_config {
     enable_private_nodes    = true
@@ -129,6 +142,12 @@ resource "google_container_cluster" "autopilot" {
   }
 
   resource_labels = local.default_labels
+
+  # One-off exclusions (e.g. around a customer's peak day) are added with gcloud;
+  # without this the provider rebuilds the exclusion list from config and drops them.
+  lifecycle {
+    ignore_changes = [maintenance_policy[0].maintenance_exclusion]
+  }
 }
 
 # Single node pool for all workloads (infra and restate pods).

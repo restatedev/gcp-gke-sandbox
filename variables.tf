@@ -94,6 +94,24 @@ variable "release_channel" {
   default     = "REGULAR"
 }
 
+variable "maintenance_window_start" {
+  description = "RFC 3339 start of the first recurring maintenance window, e.g. 2026-09-09T00:00:00Z. Only its time of day (and day of month for FREQ=MONTHLY) matters after the first occurrence."
+  type        = string
+  default     = ""
+}
+
+variable "maintenance_window_end" {
+  description = "RFC 3339 end of the first recurring maintenance window; end minus start is each window's duration."
+  type        = string
+  default     = ""
+}
+
+variable "maintenance_window_recurrence" {
+  description = "RFC 5545 RRULE for the maintenance window, e.g. FREQ=MONTHLY. Empty leaves maintenance unrestricted."
+  type        = string
+  default     = ""
+}
+
 variable "deletion_protection" {
   description = "Whether to enable deletion protection on the cluster."
   type        = bool
