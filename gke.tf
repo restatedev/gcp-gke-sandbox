@@ -32,13 +32,24 @@ resource "google_container_cluster" "autopilot" {
 
   # Release channels force node auto-upgrade on, so the recurring window is the
   # only control over when GKE rotates nodes. Unset leaves maintenance unrestricted.
+  # recurring_maintenance_window is what gcloud's --maintenance-window-* flags write,
+  # so a window set by hand plans as a no-op once mirrored here.
   dynamic "maintenance_policy" {
-    for_each = var.maintenance_window_recurrence == "" ? [] : [1]
+    for_each = var.maintenance_window_recurrence == "" ? [] : [var.maintenance_window_start]
     content {
-      recurring_window {
-        start_time = var.maintenance_window_start
-        end_time   = var.maintenance_window_end
-        recurrence = var.maintenance_window_recurrence
+      recurring_maintenance_window {
+        delay_until {
+          year  = tonumber(formatdate("YYYY", maintenance_policy.value))
+          month = tonumber(formatdate("M", maintenance_policy.value))
+          day   = tonumber(formatdate("D", maintenance_policy.value))
+        }
+        window_start_time {
+          hours   = tonumber(formatdate("h", maintenance_policy.value))
+          minutes = tonumber(formatdate("m", maintenance_policy.value))
+          seconds = tonumber(formatdate("s", maintenance_policy.value))
+        }
+        window_duration = var.maintenance_window_duration
+        recurrence      = var.maintenance_window_recurrence
       }
     }
   }

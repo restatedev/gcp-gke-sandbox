@@ -58,8 +58,8 @@ See [docs/connecting-to-gke.md](docs/connecting-to-gke.md) for connecting to the
 | `gcp_credentials_base64` | Base64-encoded service account JSON | `""` | no |
 | `cluster_name` | GKE cluster name | `n-{nuon_id}` | no |
 | `release_channel` | GKE release channel | `REGULAR` | no |
-| `maintenance_window_start` | RFC 3339 start of the first recurring maintenance window | `""` | no |
-| `maintenance_window_end` | RFC 3339 end of the first window (sets each window's duration) | `""` | no |
+| `maintenance_window_start` | RFC 3339 UTC start of the first recurring maintenance window | `""` | no |
+| `maintenance_window_duration` | Length of each window, e.g. `600h` | `""` | no |
 | `maintenance_window_recurrence` | RFC 5545 RRULE; empty leaves maintenance unrestricted | `""` | no |
 | `cluster_endpoint_public_access` | Public API endpoint | `true` | no |
 | `network` | Existing VPC (empty = create new) | `""` | no |

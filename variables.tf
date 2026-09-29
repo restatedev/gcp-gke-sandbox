@@ -95,13 +95,13 @@ variable "release_channel" {
 }
 
 variable "maintenance_window_start" {
-  description = "RFC 3339 start of the first recurring maintenance window, e.g. 2026-09-09T00:00:00Z. Only its time of day (and day of month for FREQ=MONTHLY) matters after the first occurrence."
+  description = "RFC 3339 UTC start of the first maintenance window, e.g. 2026-09-03T00:00:00Z. Its time of day is when each window opens; its date is the first date a window may open (and the day of month for FREQ=MONTHLY)."
   type        = string
   default     = ""
 }
 
-variable "maintenance_window_end" {
-  description = "RFC 3339 end of the first recurring maintenance window; end minus start is each window's duration."
+variable "maintenance_window_duration" {
+  description = "Length of each maintenance window as a duration, e.g. 600h (the same value as gcloud's --maintenance-window-duration)."
   type        = string
   default     = ""
 }

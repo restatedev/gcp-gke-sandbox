@@ -4,8 +4,8 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
-      # rbac_binding_config on google_container_cluster requires the 6.x line.
-      version = ">= 6.0"
+      # recurring_maintenance_window on google_container_cluster requires 7.41.
+      version = ">= 7.41"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
