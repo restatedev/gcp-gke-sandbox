@@ -91,9 +91,13 @@ resource "google_container_cluster" "autopilot" {
   # constraint targets, so API discovery / kubectl for existing tokens is
   # unaffected. Updating an existing cluster does not delete pre-existing
   # non-default bindings (we create none); those would need manual removal.
+  #
+  # The one opt-in: the Pinniped Concierge's login API needs an anonymous
+  # (system:unauthenticated) binding, so an install that enables staff kubectl
+  # access sets allow_unauthenticated_rbac_bindings. system:authenticated stays off.
   rbac_binding_config {
     enable_insecure_binding_system_authenticated   = false
-    enable_insecure_binding_system_unauthenticated = false
+    enable_insecure_binding_system_unauthenticated = var.allow_unauthenticated_rbac_bindings
   }
 
   binary_authorization {
