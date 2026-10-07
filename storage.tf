@@ -73,11 +73,20 @@ locals {
     "hyperdisk-16k-400"  = { iops = "16000", throughput = "400Mi" } # 8-vCPU profiles
     "hyperdisk-16k-800"  = { iops = "16000", throughput = "800Mi" }
     "hyperdisk-16k-1200" = { iops = "16000", throughput = "1200Mi" }
-    "hyperdisk-16k-2400" = { iops = "16000", throughput = "2400Mi" } # 24+ vCPU / high-write profiles; needs c3d-standard-60+
-    "hyperdisk-32k-800"  = { iops = "32000", throughput = "800Mi" }  # 16+ vCPU profiles / benchmarking
-    "hyperdisk-32k-1200" = { iops = "32000", throughput = "1200Mi" } # warning: +$336/mo
-    "hyperdisk-64k-1200" = { iops = "64000", throughput = "1200Mi" } # warning: +$816/mo
-    "hyperdisk-93k-1200" = { iops = "93750", throughput = "1200Mi" } # warning: +$1262/mo
+    "hyperdisk-16k-2400"  = { iops = "16000", throughput = "2400Mi" }  # 24+ vCPU / high-write profiles; needs c3d-standard-60+
+    "hyperdisk-32k-800"   = { iops = "32000", throughput = "800Mi" }   # 16+ vCPU profiles / benchmarking
+    "hyperdisk-32k-1200"  = { iops = "32000", throughput = "1200Mi" }  # warning: +$336/mo
+    # 2400 MiB/s is the per-disk hyperdisk-balanced throughput cap; the ladder
+    # below sweeps IOPS at that ceiling for workloads already saturated on
+    # throughput. All fit the c3d-standard-60 per-VM 150k-IOPS / 2400-MiB/s cap
+    # except 160k, which needs c3d-standard-90+ (160k-IOPS per-VM cap).
+    "hyperdisk-32k-2400"  = { iops = "32000", throughput = "2400Mi" }  # needs c3d-standard-60+
+    "hyperdisk-64k-1200"  = { iops = "64000", throughput = "1200Mi" }  #
+    "hyperdisk-64k-2400"  = { iops = "64000", throughput = "2400Mi" }  # needs c3d-standard-60+
+    "hyperdisk-93k-1200"  = { iops = "93750", throughput = "1200Mi" }  #
+    "hyperdisk-93k-2400"  = { iops = "93750", throughput = "2400Mi" }  # needs c3d-standard-60+
+    "hyperdisk-128k-2400" = { iops = "128000", throughput = "2400Mi" } # needs c3d-standard-60+
+    "hyperdisk-160k-2400" = { iops = "160000", throughput = "2400Mi" } # needs c3d-standard-90+ (above c3d-standard-60's 150k per-VM cap)
   }
 }
 
