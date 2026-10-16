@@ -206,10 +206,11 @@ resource "google_container_node_pool" "default" {
       "workload-type" = "restate"
     })
 
+    # fs.file-max is left at the kernel default (about 10% of RAM in pages, millions on these
+    # nodes). A fixed 104857 was set here and let a leak in GKE's netd exhaust it (INC-607).
     linux_node_config {
       sysctls = {
         "fs.aio-max-nr"               = "65536"
-        "fs.file-max"                 = "104857"
         "fs.inotify.max_user_watches" = "1000000"
       }
     }
