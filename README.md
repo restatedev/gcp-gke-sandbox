@@ -69,7 +69,8 @@ See [docs/connecting-to-gke.md](docs/connecting-to-gke.md) for connecting to the
 | `internal_root_domain` | Internal DNS domain | `""` | no |
 | `additional_namespaces` | Extra K8s namespaces | `[]` | no |
 | `deletion_protection` | Cluster deletion protection | `false` | no |
-| `labels` | Resource labels | `{}` | no |
+| `environment` | `environment` label on the cluster and node VMs | `production` | no |
+| `labels` | Resource labels; override the cluster's compliance labels | `{}` | no |
 | `tags` | Nuon resource tags | `{}` | no |
 
 ## Outputs

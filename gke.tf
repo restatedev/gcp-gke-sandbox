@@ -152,7 +152,10 @@ resource "google_container_cluster" "autopilot" {
     }
   }
 
-  resource_labels = local.default_labels
+  # Updated in place; GKE pushes the change to existing node VMs in the background
+  # (up to an hour). Keep these off node_config: changing node pool labels
+  # recreates the nodes.
+  resource_labels = local.cluster_resource_labels
 
   # One-off exclusions (e.g. around a customer's peak day) are added with gcloud;
   # without this the provider rebuilds the exclusion list from config and drops them.

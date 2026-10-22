@@ -224,6 +224,17 @@ variable "master_authorized_networks" {
 # Labels / tags
 # -----------------------------------------------------------
 
+variable "environment" {
+  description = "Value of the environment label on the cluster and its node VMs."
+  type        = string
+  default     = "production"
+
+  validation {
+    condition     = can(regex("^[a-z0-9_-]{1,63}$", var.environment))
+    error_message = "environment must be 1-63 lowercase letters, digits, underscores or dashes."
+  }
+}
+
 variable "labels" {
   description = "Labels to apply to all resources."
   type        = map(string)
