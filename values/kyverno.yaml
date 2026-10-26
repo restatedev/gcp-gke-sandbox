@@ -30,6 +30,12 @@ reportsController:
     requests:
       cpu: 100m
       memory: 128Mi
+  # GKE's own ValidatingAdmissionPolicies read request.userInfo, which a
+  # background scan doesn't have, so every scanned object got a Warning
+  # PolicyViolation event each hour. Kyverno ClusterPolicy reports are unaffected.
+  featuresOverride:
+    validatingAdmissionPolicyReports:
+      enabled: false
 
 # The chart's pre-delete hook scales Kyverno to 0 and cleans up the dynamic
 # webhook configurations Kyverno creates at runtime. We don't need it: when
