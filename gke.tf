@@ -220,3 +220,64 @@ resource "google_container_node_pool" "default" {
     ignore_changes = [initial_node_count]
   }
 }
+
+# Other machine families for the cluster autoscaler to use when GCE has no capacity for
+# node_machine_type in a zone. Without them, pods pinned to that zone (the per-zone tunnel
+# Deployments) stay Pending until capacity returns. They scale from zero and otherwise
+# match the default pool, so the same pods schedule on them.
+resource "google_container_node_pool" "fallback" {
+  for_each = toset(local.fallback_node_machine_types)
+
+  project  = var.project_id
+  name     = "fallback-${each.value}"
+  cluster  = google_container_cluster.autopilot.name
+  location = var.region
+
+  initial_node_count = 0
+
+  autoscaling {
+    min_node_count  = 0
+    max_node_count  = var.node_max_count
+    location_policy = "BALANCED"
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  node_config {
+    machine_type    = each.value
+    disk_size_gb    = var.node_disk_size_gb
+    disk_type       = var.node_disk_type
+    service_account = google_service_account.gke_nodes.email
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
+
+    shielded_instance_config {
+      enable_secure_boot          = false
+      enable_integrity_monitoring = true
+    }
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+
+    labels = merge(local.default_labels, {
+      "workload-type" = "restate"
+    })
+
+    linux_node_config {
+      sysctls = {
+        "fs.aio-max-nr"               = "65536"
+        "fs.inotify.max_user_watches" = "1000000"
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [initial_node_count]
+  }
+}

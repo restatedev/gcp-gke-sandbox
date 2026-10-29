@@ -58,6 +58,12 @@ variable "node_machine_type" {
   default     = "c3-standard-8"
 }
 
+variable "fallback_node_machine_types" {
+  description = "Comma-separated machine types for zero-minimum fallback pools, used when node_machine_type has no capacity in a zone. Each must support node_disk_type (N4 and C4 take Hyperdisk only). Empty creates none."
+  type        = string
+  default     = ""
+}
+
 variable "node_initial_count" {
   description = "Initial node count per zone."
   type        = number

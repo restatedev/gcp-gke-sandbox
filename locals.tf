@@ -7,6 +7,8 @@ locals {
   public_domain   = trimprefix(trimsuffix(trimspace(var.public_root_domain), "."), ".")
   internal_domain = trimprefix(trimsuffix(trimspace(var.internal_root_domain), "."), ".")
 
+  fallback_node_machine_types = compact([for t in split(",", var.fallback_node_machine_types) : trimspace(t)])
+
   default_labels = merge(var.labels, {
     "nuon-id"         = var.nuon_id
     "managed-by"      = "nuon"
