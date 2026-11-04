@@ -211,6 +211,12 @@ variable "enable_datadog_collector" {
 # Access control
 # -----------------------------------------------------------
 
+variable "allow_unauthenticated_rbac_bindings" {
+  description = "Allow RBAC bindings to system:unauthenticated (GKE enableInsecureBindingSystemUnauthenticated). Off by default; the Pinniped Concierge needs it for its anonymous login API, so only installs that enable staff kubectl access turn it on. Bindings to system:authenticated stay disallowed. Rejected in projects that enforce constraints/container.managed.disableRBACSystemBindings."
+  type        = bool
+  default     = false
+}
+
 variable "master_authorized_networks" {
   description = "CIDR blocks authorized to access the GKE control plane."
   type = list(object({

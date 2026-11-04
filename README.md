@@ -62,6 +62,7 @@ See [docs/connecting-to-gke.md](docs/connecting-to-gke.md) for connecting to the
 | `maintenance_window_duration` | Length of each window, e.g. `600h` | `""` | no |
 | `maintenance_window_recurrence` | RFC 5545 RRULE; empty leaves maintenance unrestricted | `""` | no |
 | `cluster_endpoint_public_access` | Public API endpoint | `true` | no |
+| `allow_unauthenticated_rbac_bindings` | Allow RBAC bindings to `system:unauthenticated` (needed by the Pinniped Concierge) | `false` | no |
 | `network` | Existing VPC (empty = create new) | `""` | no |
 | `subnetwork` | Existing subnet (empty = create new) | `""` | no |
 | `enable_nuon_dns` | Enable Nuon DNS zones | `false` | no |
