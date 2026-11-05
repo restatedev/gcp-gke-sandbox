@@ -241,3 +241,49 @@ variable "tags" {
   type        = map(any)
   default     = {}
 }
+
+# -----------------------------------------------------------
+# Compliance controls (Vanta SOC 2)
+# -----------------------------------------------------------
+
+variable "enable_flow_logs" {
+  description = "Enable VPC flow logs on the GKE subnet. Only affects a subnet this module creates (network = \"\")."
+  type        = bool
+  default     = true
+}
+
+variable "alert_notification_emails" {
+  description = "Comma-separated email addresses notified by the CPU and Cloud IDS alert policies. Empty creates the policies without a notification channel."
+  type        = string
+  default     = ""
+}
+
+variable "cpu_alert_threshold" {
+  description = "Mean instance CPU utilization (0-1) above which the compute CPU alert fires."
+  type        = number
+  default     = 0.9
+}
+
+variable "enable_cloud_ids" {
+  description = "Provision a Cloud IDS endpoint (plus private services access, packet mirroring of the GKE subnet, and a threat alert). Billed per endpoint-hour and per GB inspected, so it is a separate switch from the other controls."
+  type        = bool
+  default     = true
+}
+
+variable "cloud_ids_zone" {
+  description = "Zone for the Cloud IDS endpoint. Empty picks the first available zone in the region."
+  type        = string
+  default     = ""
+}
+
+variable "cloud_ids_severity" {
+  description = "Minimum threat severity the endpoint reports: INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL."
+  type        = string
+  default     = "LOW"
+}
+
+variable "cloud_ids_psa_prefix_length" {
+  description = "Prefix length of the private services access range allocated for Cloud IDS when the VPC has none."
+  type        = number
+  default     = 23
+}

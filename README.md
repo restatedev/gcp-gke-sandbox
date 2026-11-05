@@ -35,6 +35,7 @@ The service account or user running terraform needs:
 - **Artifact Registry** (Docker) — equivalent to ECR
 - **Cloud DNS Zones** — public and internal (optional, controlled by `enable_nuon_dns`)
 - **VPC + Subnet + Cloud NAT** — networking (optional, can use existing VPC)
+- **Compliance controls** — instance CPU alert policy and email channels (`alert_notification_emails`); flow logs on a module-created subnet; optional billed Cloud IDS endpoint with packet mirroring and a threat alert (`enable_cloud_ids`)
 - **Kubernetes Namespaces** — nuon_id namespace + additional
 
 ## Local Testing
