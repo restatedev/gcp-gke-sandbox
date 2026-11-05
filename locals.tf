@@ -14,5 +14,20 @@ locals {
     "sandbox-variant" = "standard"
   })
 
+  # Ownership and classification labels that compliance checks (Vanta) require on
+  # every Compute Engine instance. GKE propagates cluster resource labels to all
+  # node VMs and their disks, including node-auto-provisioned pools, so they are
+  # set on the cluster only. var.labels can override any of them.
+  cluster_resource_labels = merge(
+    {
+      "environment"        = var.environment
+      "owner"              = "restate"
+      "project"            = var.nuon_id
+      "dataclassification" = "confidential"
+      "application"        = "restate-byoc"
+    },
+    local.default_labels,
+  )
+
   namespaces = concat([var.nuon_id], var.additional_namespaces)
 }
