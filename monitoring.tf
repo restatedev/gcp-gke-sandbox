@@ -17,6 +17,8 @@ resource "google_monitoring_notification_channel" "email" {
 
 # Project-wide, so it also covers VMs outside the cluster (the Nuon runner).
 resource "google_monitoring_alert_policy" "instance_cpu" {
+  count = var.enable_cpu_alert ? 1 : 0
+
   project      = var.project_id
   display_name = "${local.cluster_name} compute instance CPU high"
   combiner     = "OR"

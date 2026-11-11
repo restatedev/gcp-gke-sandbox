@@ -247,9 +247,15 @@ variable "tags" {
 # -----------------------------------------------------------
 
 variable "enable_flow_logs" {
-  description = "Enable VPC flow logs on the GKE subnet. Only affects a subnet this module creates (network = \"\")."
+  description = "Enable VPC flow logs on the GKE subnet. Only affects a subnet this module creates (network = \"\"). Off by default: the compliance controls apply to installs in Restate-owned projects, not to every install."
   type        = bool
-  default     = true
+  default     = false
+}
+
+variable "enable_cpu_alert" {
+  description = "Create a project-wide alert policy for high compute instance CPU. Off by default: only installs in Restate-owned projects need it."
+  type        = bool
+  default     = false
 }
 
 variable "alert_notification_emails" {
@@ -265,9 +271,9 @@ variable "cpu_alert_threshold" {
 }
 
 variable "enable_cloud_ids" {
-  description = "Provision a Cloud IDS endpoint (plus private services access, packet mirroring of the GKE subnet, and a threat alert). Billed per endpoint-hour and per GB inspected, so it is a separate switch from the other controls."
+  description = "Provision a Cloud IDS endpoint (plus private services access, packet mirroring of the GKE subnet, and a threat alert). Billed per endpoint-hour and per GB inspected, so it is a separate switch from the other controls, and off by default: enable it only for installs in Restate-owned projects, never for a customer's project."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cloud_ids_zone" {
