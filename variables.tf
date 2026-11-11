@@ -252,12 +252,6 @@ variable "enable_flow_logs" {
   default     = false
 }
 
-variable "grafana_monitoring_viewer_sa" {
-  description = "Email of the Grafana Cloud service account that reads this project's Cloud Monitoring metrics (for example the one behind the gcm-* Grafana data source). When set, it gets roles/monitoring.viewer on the project, so Grafana alerts can cover VMs outside the cluster such as the runner. Empty grants nothing."
-  type        = string
-  default     = ""
-}
-
 variable "enable_cpu_alert" {
   description = "Create a project-wide alert policy for high compute instance CPU. Off by default: only installs in Restate-owned projects need it."
   type        = bool
