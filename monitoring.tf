@@ -41,3 +41,13 @@ resource "google_monitoring_alert_policy" "instance_cpu" {
 
   notification_channels = [for c in google_monitoring_notification_channel.email : c.id]
 }
+
+# Lets Grafana read this project's Cloud Monitoring metrics. Additive and
+# non-authoritative, so it leaves other roles/monitoring.viewer members alone.
+resource "google_project_iam_member" "grafana_monitoring_viewer" {
+  count = var.grafana_monitoring_viewer_sa != "" ? 1 : 0
+
+  project = var.project_id
+  role    = "roles/monitoring.viewer"
+  member  = "serviceAccount:${var.grafana_monitoring_viewer_sa}"
+}
