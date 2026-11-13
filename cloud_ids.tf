@@ -7,13 +7,15 @@
 # -----------------------------------------------------------------------------
 
 locals {
-  cloud_ids_count = var.enable_cloud_ids ? 1 : 0
-  cloud_ids_zone  = var.cloud_ids_zone != "" ? var.cloud_ids_zone : sort(data.google_compute_zones.available.names)[0]
-  gke_subnet_name = element(split("/", local.subnetwork), length(split("/", local.subnetwork)) - 1)
+  cloud_ids_count               = var.enable_cloud_ids ? 1 : 0
+  cloud_ids_zone                = var.cloud_ids_zone != "" ? var.cloud_ids_zone : sort(data.google_compute_zones.available.names)[0]
+  gke_subnet_name               = element(split("/", local.subnetwork), length(split("/", local.subnetwork)) - 1)
+  cloud_ids_mirror_cidr_ranges  = [for c in split(",", var.cloud_ids_mirror_cidr_ranges) : trimspace(c) if trimspace(c) != ""]
+  cloud_ids_mirror_ip_protocols = [for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) if trimspace(p) != ""]
   cloud_ids_mirror_filtered = (
     var.cloud_ids_mirror_direction != "BOTH" ||
-    length(var.cloud_ids_mirror_cidr_ranges) > 0 ||
-    length(var.cloud_ids_mirror_ip_protocols) > 0
+    length(local.cloud_ids_mirror_cidr_ranges) > 0 ||
+    length(local.cloud_ids_mirror_ip_protocols) > 0
   )
 }
 
@@ -91,7 +93,7 @@ resource "google_compute_packet_mirroring" "cloud_ids" {
   # subnet is mirrored, which is also what the provider does by default.
   lifecycle {
     precondition {
-      condition     = length(var.cloud_ids_mirror_cidr_ranges) * max(1, length(var.cloud_ids_mirror_ip_protocols)) <= 30
+      condition     = length(local.cloud_ids_mirror_cidr_ranges) * max(1, length(local.cloud_ids_mirror_ip_protocols)) <= 30
       error_message = "Packet mirroring allows at most 30 filters, counted as CIDR ranges times protocols."
     }
   }
@@ -100,8 +102,8 @@ resource "google_compute_packet_mirroring" "cloud_ids" {
     for_each = local.cloud_ids_mirror_filtered ? [1] : []
     content {
       direction    = var.cloud_ids_mirror_direction
-      cidr_ranges  = var.cloud_ids_mirror_cidr_ranges
-      ip_protocols = var.cloud_ids_mirror_ip_protocols
+      cidr_ranges  = local.cloud_ids_mirror_cidr_ranges
+      ip_protocols = local.cloud_ids_mirror_ip_protocols
     }
   }
 }
