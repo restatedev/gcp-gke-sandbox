@@ -35,7 +35,7 @@ The service account or user running terraform needs:
 - **Artifact Registry** (Docker) — equivalent to ECR
 - **Cloud DNS Zones** — public and internal (optional, controlled by `enable_nuon_dns`)
 - **VPC + Subnet + Cloud NAT** — networking (optional, can use existing VPC)
-- **Compliance controls** (all off by default; enable only for installs in Restate-owned projects) — instance CPU alert policy (`enable_cpu_alert`) and email channels (`alert_notification_emails`); flow logs on a module-created subnet (`enable_flow_logs`); billed Cloud IDS endpoint with packet mirroring and a threat alert (`enable_cloud_ids`)
+- **Compliance controls** (all off by default; enable only for installs in Restate-owned projects) — instance CPU alert policy (`enable_cpu_alert`) and email channels (`alert_notification_emails`); flow logs on a module-created subnet (`enable_flow_logs`); billed Cloud IDS endpoint with packet mirroring and a threat alert (`enable_cloud_ids`; narrow what is mirrored, and so billed, with `cloud_ids_mirror_direction`, `cloud_ids_mirror_cidr_ranges` and `cloud_ids_mirror_ip_protocols`)
 - **Kubernetes Namespaces** — nuon_id namespace + additional
 
 ## Local Testing
