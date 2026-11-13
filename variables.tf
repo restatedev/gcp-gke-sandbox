@@ -293,3 +293,31 @@ variable "cloud_ids_psa_prefix_length" {
   type        = number
   default     = 23
 }
+
+variable "cloud_ids_mirror_direction" {
+  description = "Traffic direction mirrored to Cloud IDS: BOTH, INGRESS or EGRESS. Packet mirroring cannot filter by port, so direction, protocol and CIDR are the only levers on inspected (billed) volume. EGRESS-only would miss inbound attacks; prefer BOTH plus cloud_ids_mirror_cidr_ranges."
+  type        = string
+  default     = "BOTH"
+
+  validation {
+    condition     = contains(["BOTH", "INGRESS", "EGRESS"], var.cloud_ids_mirror_direction)
+    error_message = "cloud_ids_mirror_direction must be BOTH, INGRESS or EGRESS."
+  }
+}
+
+variable "cloud_ids_mirror_cidr_ranges" {
+  description = "Mirror only packets whose source or destination falls in these CIDR ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list the external ranges that matter (public address space, plus any private ranges that carry external clients such as a Private Service Connect NAT subnet)."
+  type        = list(string)
+  default     = []
+}
+
+variable "cloud_ids_mirror_ip_protocols" {
+  description = "Mirror only these IP protocols (tcp, udp, icmp, esp, ah, ipip, sctp). Empty mirrors all protocols."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for p in var.cloud_ids_mirror_ip_protocols : contains(["tcp", "udp", "icmp", "esp", "ah", "ipip", "sctp"], p)])
+    error_message = "cloud_ids_mirror_ip_protocols entries must be tcp, udp, icmp, esp, ah, ipip or sctp."
+  }
+}
