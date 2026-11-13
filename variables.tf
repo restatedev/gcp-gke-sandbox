@@ -306,18 +306,18 @@ variable "cloud_ids_mirror_direction" {
 }
 
 variable "cloud_ids_mirror_cidr_ranges" {
-  description = "Mirror only packets whose source or destination falls in these CIDR ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list the external ranges that matter (public address space, plus any private ranges that carry external clients such as a Private Service Connect NAT subnet)."
-  type        = list(string)
-  default     = []
+  description = "Comma-separated CIDR ranges. Mirror only packets whose remote end (source on ingress, destination on egress) falls in these ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list everything except the VPC's own ranges. At most 30 ranges times protocols."
+  type        = string
+  default     = ""
 }
 
 variable "cloud_ids_mirror_ip_protocols" {
-  description = "Mirror only these IP protocols (tcp, udp, icmp, esp, ah, ipip, sctp). Empty mirrors all protocols."
-  type        = list(string)
-  default     = []
+  description = "Comma-separated IP protocols to mirror (tcp, udp, icmp, esp, ah, ipip, sctp). Empty mirrors all protocols."
+  type        = string
+  default     = ""
 
   validation {
-    condition     = alltrue([for p in var.cloud_ids_mirror_ip_protocols : contains(["tcp", "udp", "icmp", "esp", "ah", "ipip", "sctp"], p)])
+    condition     = alltrue([for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) == "" || contains(["tcp", "udp", "icmp", "esp", "ah", "ipip", "sctp"], trimspace(p))])
     error_message = "cloud_ids_mirror_ip_protocols entries must be tcp, udp, icmp, esp, ah, ipip or sctp."
   }
 }
