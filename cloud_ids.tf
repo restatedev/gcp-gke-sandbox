@@ -89,6 +89,13 @@ resource "google_compute_packet_mirroring" "cloud_ids" {
 
   # With none of the three variables set, no filter is rendered and the whole
   # subnet is mirrored, which is also what the provider does by default.
+  lifecycle {
+    precondition {
+      condition     = length(var.cloud_ids_mirror_cidr_ranges) * max(1, length(var.cloud_ids_mirror_ip_protocols)) <= 30
+      error_message = "Packet mirroring allows at most 30 filters, counted as CIDR ranges times protocols."
+    }
+  }
+
   dynamic "filter" {
     for_each = local.cloud_ids_mirror_filtered ? [1] : []
     content {

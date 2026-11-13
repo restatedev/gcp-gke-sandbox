@@ -309,11 +309,6 @@ variable "cloud_ids_mirror_cidr_ranges" {
   description = "Mirror only packets whose source or destination falls in these CIDR ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list the external ranges that matter (public address space, plus any private ranges that carry external clients such as a Private Service Connect NAT subnet)."
   type        = list(string)
   default     = []
-
-  validation {
-    condition     = length(var.cloud_ids_mirror_cidr_ranges) * max(1, length(var.cloud_ids_mirror_ip_protocols)) <= 30
-    error_message = "Packet mirroring allows at most 30 filters, counted as CIDR ranges times protocols."
-  }
 }
 
 variable "cloud_ids_mirror_ip_protocols" {
