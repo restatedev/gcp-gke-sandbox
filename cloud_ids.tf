@@ -12,6 +12,12 @@ locals {
   gke_subnet_name               = element(split("/", local.subnetwork), length(split("/", local.subnetwork)) - 1)
   cloud_ids_mirror_cidr_ranges  = [for c in split(",", var.cloud_ids_mirror_cidr_ranges) : trimspace(c) if trimspace(c) != ""]
   cloud_ids_mirror_ip_protocols = [for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) if trimspace(p) != ""]
+  cloud_ids_severities          = ["INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
+  # Severities at or above cloud_ids_alert_min_severity, as a log filter clause; empty alerts on all.
+  cloud_ids_alert_severity_filter = var.cloud_ids_alert_min_severity == "" ? "" : format(
+    " AND jsonPayload.alert_severity=(%s)",
+    join(" OR ", [for s in slice(local.cloud_ids_severities, index(local.cloud_ids_severities, var.cloud_ids_alert_min_severity), length(local.cloud_ids_severities)) : "\"${s}\""])
+  )
   cloud_ids_mirror_filtered = (
     var.cloud_ids_mirror_direction != "BOTH" ||
     length(local.cloud_ids_mirror_cidr_ranges) > 0 ||
@@ -119,7 +125,7 @@ resource "google_monitoring_alert_policy" "cloud_ids_threat" {
   conditions {
     display_name = "Cloud IDS threat log entry"
     condition_matched_log {
-      filter = "resource.type=\"ids.googleapis.com/Endpoint\" AND log_id(\"ids.googleapis.com/threat\")"
+      filter = "resource.type=\"ids.googleapis.com/Endpoint\" AND log_id(\"ids.googleapis.com/threat\")${local.cloud_ids_alert_severity_filter}"
     }
   }
 
@@ -129,5 +135,5 @@ resource "google_monitoring_alert_policy" "cloud_ids_threat" {
     }
   }
 
-  notification_channels = [for c in google_monitoring_notification_channel.email : c.id]
+  notification_channels = local.alert_channels
 }
