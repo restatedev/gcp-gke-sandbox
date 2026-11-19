@@ -264,6 +264,12 @@ variable "alert_notification_emails" {
   default     = ""
 }
 
+variable "alert_notification_channel_ids" {
+  description = "Comma-separated IDs of existing Cloud Monitoring notification channels (for example a Slack channel, which needs OAuth in the console and so cannot be created here), notified by the CPU and Cloud IDS alert policies in addition to alert_notification_emails. Each entry is a full name (projects/P/notificationChannels/ID) or a bare ID in this project."
+  type        = string
+  default     = ""
+}
+
 variable "cpu_alert_threshold" {
   description = "Mean instance CPU utilization (0-1) above which the compute CPU alert fires."
   type        = number
@@ -320,4 +326,27 @@ variable "cloud_ids_mirror_ip_protocols" {
     condition     = alltrue([for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) == "" || contains(["tcp", "udp", "icmp", "esp", "ah", "ipip", "sctp"], trimspace(p))])
     error_message = "cloud_ids_mirror_ip_protocols entries must be tcp, udp, icmp, esp, ah, ipip or sctp."
   }
+}
+
+variable "cloud_ids_alert_min_severity" {
+  description = "Lowest Cloud IDS threat severity that triggers the threat alert: INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL. Empty alerts on every threat the endpoint reports (see cloud_ids_severity). Threats below it are still logged."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = contains(["", "INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"], var.cloud_ids_alert_min_severity)
+    error_message = "cloud_ids_alert_min_severity must be empty, INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL."
+  }
+}
+
+variable "enable_google_apis_psc" {
+  description = "Reach Google APIs (googleapis.com, pkg.dev, gcr.io) through a Private Service Connect endpoint at google_apis_psc_address, with private DNS zones pointing those names at it. Keeps API traffic off Google's public addresses, and so out of Cloud IDS mirroring when the address is outside cloud_ids_mirror_cidr_ranges."
+  type        = bool
+  default     = false
+}
+
+variable "google_apis_psc_address" {
+  description = "Internal IPv4 address for the Private Service Connect endpoint for Google APIs. Must be outside every subnet range of the VPC. Required when enable_google_apis_psc is true."
+  type        = string
+  default     = ""
 }

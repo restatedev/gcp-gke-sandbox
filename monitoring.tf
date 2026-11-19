@@ -4,6 +4,12 @@
 
 locals {
   alert_emails = toset([for e in split(",", var.alert_notification_emails) : trimspace(e) if trimspace(e) != ""])
+  alert_extra_channels = [
+    for c in split(",", var.alert_notification_channel_ids) :
+    startswith(trimspace(c), "projects/") ? trimspace(c) : "projects/${var.project_id}/notificationChannels/${trimspace(c)}"
+    if trimspace(c) != ""
+  ]
+  alert_channels = concat([for c in google_monitoring_notification_channel.email : c.id], local.alert_extra_channels)
 }
 
 resource "google_monitoring_notification_channel" "email" {
@@ -39,5 +45,5 @@ resource "google_monitoring_alert_policy" "instance_cpu" {
     }
   }
 
-  notification_channels = [for c in google_monitoring_notification_channel.email : c.id]
+  notification_channels = local.alert_channels
 }
