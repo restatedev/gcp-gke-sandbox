@@ -132,11 +132,14 @@ resource "google_logging_metric" "cloud_ids_threat" {
   }
 }
 
-resource "google_monitoring_alert_policy" "cloud_ids_threat" {
+# A new resource name, so Terraform replaces the earlier log-match policy instead of updating it:
+# the Monitoring API accepts an update that changes a condition's type (log match to threshold)
+# but keeps the old condition, so an in-place update never takes effect.
+resource "google_monitoring_alert_policy" "cloud_ids_threat_metric" {
   count = local.cloud_ids_count
 
   project      = var.project_id
-  display_name = "${local.cluster_name} Cloud IDS threat detected"
+  display_name = "${local.cluster_name} Cloud IDS threats (log-based metric)"
   combiner     = "OR"
   user_labels  = local.default_labels
 
