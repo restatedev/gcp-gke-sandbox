@@ -114,6 +114,24 @@ resource "google_compute_packet_mirroring" "cloud_ids" {
   }
 }
 
+# Threat alerting goes through a log-based metric rather than a log-match condition: Vanta's
+# "Intrusion detection system notifications configured (GCP)" test looks for a logs-based metric
+# on the Cloud IDS threat log with an alert policy on it, and does not recognise log-match
+# policies. The filter follows the form Vanta's remediation gives.
+resource "google_logging_metric" "cloud_ids_threat" {
+  count = local.cloud_ids_count
+
+  project = var.project_id
+  name    = "${local.cluster_name}-cloud-ids-threats"
+  filter  = "logName=\"projects/${var.project_id}/logs/ids.googleapis.com%2Fthreat\" AND resource.type=\"ids.googleapis.com/Endpoint\"${local.cloud_ids_alert_severity_filter}"
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    unit        = "1"
+  }
+}
+
 resource "google_monitoring_alert_policy" "cloud_ids_threat" {
   count = local.cloud_ids_count
 
@@ -123,16 +141,26 @@ resource "google_monitoring_alert_policy" "cloud_ids_threat" {
   user_labels  = local.default_labels
 
   conditions {
-    display_name = "Cloud IDS threat log entry"
-    condition_matched_log {
-      filter = "resource.type=\"ids.googleapis.com/Endpoint\" AND log_id(\"ids.googleapis.com/threat\")${local.cloud_ids_alert_severity_filter}"
+    display_name = "Cloud IDS threats logged"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.cloud_ids_threat[0].name}\" AND resource.type=\"ids.googleapis.com/Endpoint\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+
+      aggregations {
+        alignment_period   = "300s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+
+      trigger {
+        count = 1
+      }
     }
   }
 
   alert_strategy {
-    notification_rate_limit {
-      period = "3600s"
-    }
+    auto_close = "1800s"
   }
 
   notification_channels = local.alert_channels
