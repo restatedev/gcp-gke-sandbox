@@ -312,7 +312,7 @@ variable "cloud_ids_mirror_direction" {
 }
 
 variable "cloud_ids_mirror_cidr_ranges" {
-  description = "Comma-separated CIDR ranges. Mirror only packets whose remote end (source on ingress, destination on egress) falls in these ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list everything except the VPC's own ranges. At most 30 ranges times protocols."
+  description = "Comma-separated CIDR ranges. Mirror only packets whose remote end (source on ingress, destination on egress) falls in these ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list everything except the VPC's own ranges. A packet mirroring policy holds at most 30 ranges times protocols, so a longer list is split across several policies."
   type        = string
   default     = ""
 }
@@ -336,6 +336,17 @@ variable "cloud_ids_alert_min_severity" {
   validation {
     condition     = contains(["", "INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"], var.cloud_ids_alert_min_severity)
     error_message = "cloud_ids_alert_min_severity must be empty, INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL."
+  }
+}
+
+variable "cloud_ids_alert_excluded_threat_ids" {
+  description = "Comma-separated Cloud IDS threat IDs (the threat_id field of the threat log) that never trigger the threat alert, such as internet-wide exploit sprays against software the install doesn't run. They are still logged."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = alltrue([for t in split(",", var.cloud_ids_alert_excluded_threat_ids) : can(regex("^[0-9]*$", trimspace(t)))])
+    error_message = "cloud_ids_alert_excluded_threat_ids entries must be numeric threat IDs."
   }
 }
 
