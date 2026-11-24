@@ -10,8 +10,8 @@ locals {
   cloud_ids_count               = var.enable_cloud_ids ? 1 : 0
   cloud_ids_zone                = var.cloud_ids_zone != "" ? var.cloud_ids_zone : sort(data.google_compute_zones.available.names)[0]
   gke_subnet_name               = element(split("/", local.subnetwork), length(split("/", local.subnetwork)) - 1)
-  cloud_ids_mirror_cidr_ranges  = [for c in split(",", var.cloud_ids_mirror_cidr_ranges) : trimspace(c) if trimspace(c) != ""]
-  cloud_ids_mirror_ip_protocols = [for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) if trimspace(p) != ""]
+  cloud_ids_mirror_cidr_ranges  = distinct([for c in split(",", coalesce(var.cloud_ids_mirror_cidr_ranges, "")) : trimspace(c) if trimspace(c) != ""])
+  cloud_ids_mirror_ip_protocols = distinct([for p in split(",", coalesce(var.cloud_ids_mirror_ip_protocols, "")) : trimspace(p) if trimspace(p) != ""])
   cloud_ids_severities          = ["INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
   # Severities at or above cloud_ids_alert_min_severity, as a log filter clause; empty alerts on all.
   cloud_ids_alert_severity_filter = var.cloud_ids_alert_min_severity == "" ? "" : format(
@@ -32,7 +32,7 @@ locals {
     ? [[]]
     : chunklist(local.cloud_ids_mirror_cidr_ranges, local.cloud_ids_mirror_ranges_per_policy)
   )
-  cloud_ids_alert_excluded_threat_ids = [for t in split(",", var.cloud_ids_alert_excluded_threat_ids) : trimspace(t) if trimspace(t) != ""]
+  cloud_ids_alert_excluded_threat_ids = distinct([for t in split(",", coalesce(var.cloud_ids_alert_excluded_threat_ids, "")) : trimspace(t) if trimspace(t) != ""])
   # Signatures excluded from the threat alert, as a log filter clause; they are still logged.
   cloud_ids_alert_exclusion_filter = length(local.cloud_ids_alert_excluded_threat_ids) == 0 ? "" : format(
     " AND NOT jsonPayload.threat_id=(%s)",
