@@ -10,8 +10,8 @@ locals {
   cloud_ids_count               = var.enable_cloud_ids ? 1 : 0
   cloud_ids_zone                = var.cloud_ids_zone != "" ? var.cloud_ids_zone : sort(data.google_compute_zones.available.names)[0]
   gke_subnet_name               = element(split("/", local.subnetwork), length(split("/", local.subnetwork)) - 1)
-  cloud_ids_mirror_cidr_ranges  = [for c in split(",", var.cloud_ids_mirror_cidr_ranges) : trimspace(c) if trimspace(c) != ""]
-  cloud_ids_mirror_ip_protocols = [for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) if trimspace(p) != ""]
+  cloud_ids_mirror_cidr_ranges  = distinct([for c in split(",", coalesce(var.cloud_ids_mirror_cidr_ranges, "")) : trimspace(c) if trimspace(c) != ""])
+  cloud_ids_mirror_ip_protocols = distinct([for p in split(",", coalesce(var.cloud_ids_mirror_ip_protocols, "")) : trimspace(p) if trimspace(p) != ""])
   cloud_ids_severities          = ["INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"]
   # Severities at or above cloud_ids_alert_min_severity, as a log filter clause; empty alerts on all.
   cloud_ids_alert_severity_filter = var.cloud_ids_alert_min_severity == "" ? "" : format(
@@ -22,6 +22,21 @@ locals {
     var.cloud_ids_mirror_direction != "BOTH" ||
     length(local.cloud_ids_mirror_cidr_ranges) > 0 ||
     length(local.cloud_ids_mirror_ip_protocols) > 0
+  )
+  # A packet mirroring policy takes at most 30 filters, counted as CIDR ranges times protocols.
+  # A longer list is spread over several policies feeding the same endpoint; their CIDR filters
+  # don't overlap, so each packet is mirrored once. The first policy keeps its original name.
+  cloud_ids_mirror_ranges_per_policy = floor(30 / max(1, length(local.cloud_ids_mirror_ip_protocols)))
+  cloud_ids_mirror_cidr_chunks = (
+    length(local.cloud_ids_mirror_cidr_ranges) == 0
+    ? [[]]
+    : chunklist(local.cloud_ids_mirror_cidr_ranges, local.cloud_ids_mirror_ranges_per_policy)
+  )
+  cloud_ids_alert_excluded_threat_ids = distinct([for t in split(",", coalesce(var.cloud_ids_alert_excluded_threat_ids, "")) : trimspace(t) if trimspace(t) != ""])
+  # Signatures excluded from the threat alert, as a log filter clause; they are still logged.
+  cloud_ids_alert_exclusion_filter = length(local.cloud_ids_alert_excluded_threat_ids) == 0 ? "" : format(
+    " AND NOT jsonPayload.threat_id=(%s)",
+    join(" OR ", [for t in local.cloud_ids_alert_excluded_threat_ids : "\"${t}\""])
   )
 }
 
@@ -75,10 +90,10 @@ data "google_compute_subnetwork" "gke" {
 }
 
 resource "google_compute_packet_mirroring" "cloud_ids" {
-  count = local.cloud_ids_count
+  count = local.cloud_ids_count * length(local.cloud_ids_mirror_cidr_chunks)
 
   project = var.project_id
-  name    = "${local.cluster_name}-ids-mirroring"
+  name    = count.index == 0 ? "${local.cluster_name}-ids-mirroring" : "${local.cluster_name}-ids-mirroring-${count.index}"
   region  = var.region
 
   network {
@@ -97,18 +112,11 @@ resource "google_compute_packet_mirroring" "cloud_ids" {
 
   # With none of the three variables set, no filter is rendered and the whole
   # subnet is mirrored, which is also what the provider does by default.
-  lifecycle {
-    precondition {
-      condition     = length(local.cloud_ids_mirror_cidr_ranges) * max(1, length(local.cloud_ids_mirror_ip_protocols)) <= 30
-      error_message = "Packet mirroring allows at most 30 filters, counted as CIDR ranges times protocols."
-    }
-  }
-
   dynamic "filter" {
     for_each = local.cloud_ids_mirror_filtered ? [1] : []
     content {
       direction    = var.cloud_ids_mirror_direction
-      cidr_ranges  = local.cloud_ids_mirror_cidr_ranges
+      cidr_ranges  = local.cloud_ids_mirror_cidr_chunks[count.index]
       ip_protocols = local.cloud_ids_mirror_ip_protocols
     }
   }
@@ -123,7 +131,7 @@ resource "google_logging_metric" "cloud_ids_threat" {
 
   project = var.project_id
   name    = "${local.cluster_name}-cloud-ids-threats"
-  filter  = "logName=\"projects/${var.project_id}/logs/ids.googleapis.com%2Fthreat\" AND resource.type=\"ids.googleapis.com/Endpoint\"${local.cloud_ids_alert_severity_filter}"
+  filter  = "logName=\"projects/${var.project_id}/logs/ids.googleapis.com%2Fthreat\" AND resource.type=\"ids.googleapis.com/Endpoint\"${local.cloud_ids_alert_severity_filter}${local.cloud_ids_alert_exclusion_filter}"
 
   metric_descriptor {
     metric_kind = "DELTA"
