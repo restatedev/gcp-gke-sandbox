@@ -27,8 +27,26 @@ data "kubectl_file_documents" "secrets_store_gcp_provider" {
   content = data.http.secrets_store_gcp_provider.response_body
 }
 
+# The provider is a node plugin: a pod whose secrets volume lands on a node without it fails to
+# mount ("provider not found"). Upstream tolerates only the arm64 taint, so it skips nodes of
+# tainted compute classes such as restate-workload. Tolerate every taint, as the CSI driver does.
+locals {
+  secrets_store_gcp_provider_manifests = {
+    for path, doc in data.kubectl_file_documents.secrets_store_gcp_provider.manifests :
+    path => strcontains(path, "/daemonsets/") ? yamlencode(merge(yamldecode(doc), {
+      spec = merge(yamldecode(doc).spec, {
+        template = merge(yamldecode(doc).spec.template, {
+          spec = merge(yamldecode(doc).spec.template.spec, {
+            tolerations = [{ operator = "Exists" }]
+          })
+        })
+      })
+    })) : doc
+  }
+}
+
 resource "kubectl_manifest" "secrets_store_gcp_provider" {
-  for_each  = data.kubectl_file_documents.secrets_store_gcp_provider.manifests
+  for_each  = local.secrets_store_gcp_provider_manifests
   yaml_body = each.value
 
   depends_on = [helm_release.secrets_store_csi]
