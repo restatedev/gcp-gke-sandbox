@@ -211,6 +211,12 @@ variable "enable_datadog_collector" {
 # Access control
 # -----------------------------------------------------------
 
+variable "allow_unauthenticated_rbac_bindings" {
+  description = "Allow RBAC bindings to system:unauthenticated (GKE enableInsecureBindingSystemUnauthenticated). Off by default; the Pinniped Concierge needs it for its anonymous login API, so only installs that enable staff kubectl access turn it on. Bindings to system:authenticated stay disallowed. Rejected in projects that enforce constraints/container.managed.disableRBACSystemBindings."
+  type        = bool
+  default     = false
+}
+
 variable "master_authorized_networks" {
   description = "CIDR blocks authorized to access the GKE control plane."
   type = list(object({
@@ -245,4 +251,124 @@ variable "tags" {
   description = "Tags provided by Nuon for resource identification."
   type        = map(any)
   default     = {}
+}
+
+# -----------------------------------------------------------
+# Compliance controls (Vanta SOC 2)
+# -----------------------------------------------------------
+
+variable "enable_flow_logs" {
+  description = "Enable VPC flow logs on the GKE subnet. Only affects a subnet this module creates (network = \"\"). Off by default: the compliance controls apply to installs in Restate-owned projects, not to every install."
+  type        = bool
+  default     = false
+}
+
+variable "enable_cpu_alert" {
+  description = "Create a project-wide alert policy for high compute instance CPU. Off by default: only installs in Restate-owned projects need it."
+  type        = bool
+  default     = false
+}
+
+variable "alert_notification_emails" {
+  description = "Comma-separated email addresses notified by the CPU and Cloud IDS alert policies. Empty creates the policies without a notification channel."
+  type        = string
+  default     = ""
+}
+
+variable "alert_notification_channel_ids" {
+  description = "Comma-separated IDs of existing Cloud Monitoring notification channels (for example a Slack channel, which needs OAuth in the console and so cannot be created here), notified by the CPU and Cloud IDS alert policies in addition to alert_notification_emails. Each entry is a full name (projects/P/notificationChannels/ID) or a bare ID in this project."
+  type        = string
+  default     = ""
+}
+
+variable "cpu_alert_threshold" {
+  description = "Mean instance CPU utilization (0-1) above which the compute CPU alert fires."
+  type        = number
+  default     = 0.9
+}
+
+variable "enable_cloud_ids" {
+  description = "Provision a Cloud IDS endpoint (plus private services access, packet mirroring of the GKE subnet, and a threat alert). Billed per endpoint-hour and per GB inspected, so it is a separate switch from the other controls, and off by default: enable it only for installs in Restate-owned projects, never for a customer's project."
+  type        = bool
+  default     = false
+}
+
+variable "cloud_ids_zone" {
+  description = "Zone for the Cloud IDS endpoint. Empty picks the first available zone in the region."
+  type        = string
+  default     = ""
+}
+
+variable "cloud_ids_severity" {
+  description = "Minimum threat severity the endpoint reports: INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL."
+  type        = string
+  default     = "LOW"
+}
+
+variable "cloud_ids_psa_prefix_length" {
+  description = "Prefix length of the private services access range allocated for Cloud IDS when the VPC has none."
+  type        = number
+  default     = 23
+}
+
+variable "cloud_ids_mirror_direction" {
+  description = "Traffic direction mirrored to Cloud IDS: BOTH, INGRESS or EGRESS. Packet mirroring cannot filter by port, so direction, protocol and CIDR are the only levers on inspected (billed) volume. EGRESS-only would miss inbound attacks; prefer BOTH plus cloud_ids_mirror_cidr_ranges."
+  type        = string
+  default     = "BOTH"
+
+  validation {
+    condition     = contains(["BOTH", "INGRESS", "EGRESS"], var.cloud_ids_mirror_direction)
+    error_message = "cloud_ids_mirror_direction must be BOTH, INGRESS or EGRESS."
+  }
+}
+
+variable "cloud_ids_mirror_cidr_ranges" {
+  description = "Comma-separated CIDR ranges. Mirror only packets whose remote end (source on ingress, destination on egress) falls in these ranges. Ranges can only be included, never excluded. Empty mirrors all traffic of the subnet, including pod-to-pod and node-to-node traffic. To skip the internal fabric, list everything except the VPC's own ranges. A packet mirroring policy holds at most 30 ranges times protocols, so a longer list is split across several policies."
+  type        = string
+  default     = ""
+}
+
+variable "cloud_ids_mirror_ip_protocols" {
+  description = "Comma-separated IP protocols to mirror (tcp, udp, icmp, esp, ah, ipip, sctp). Empty mirrors all protocols."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = alltrue([for p in split(",", var.cloud_ids_mirror_ip_protocols) : trimspace(p) == "" || contains(["tcp", "udp", "icmp", "esp", "ah", "ipip", "sctp"], trimspace(p))])
+    error_message = "cloud_ids_mirror_ip_protocols entries must be tcp, udp, icmp, esp, ah, ipip or sctp."
+  }
+}
+
+variable "cloud_ids_alert_min_severity" {
+  description = "Lowest Cloud IDS threat severity that triggers the threat alert: INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL. Empty alerts on every threat the endpoint reports (see cloud_ids_severity). Threats below it are still logged."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = contains(["", "INFORMATIONAL", "LOW", "MEDIUM", "HIGH", "CRITICAL"], var.cloud_ids_alert_min_severity)
+    error_message = "cloud_ids_alert_min_severity must be empty, INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL."
+  }
+}
+
+variable "cloud_ids_alert_excluded_threat_ids" {
+  description = "Comma-separated Cloud IDS threat IDs (the threat_id field of the threat log) that never trigger the threat alert, such as internet-wide exploit sprays against software the install doesn't run. They are still logged."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = alltrue([for t in split(",", var.cloud_ids_alert_excluded_threat_ids) : can(regex("^[0-9]*$", trimspace(t)))])
+    error_message = "cloud_ids_alert_excluded_threat_ids entries must be numeric threat IDs."
+  }
+}
+
+variable "enable_google_apis_psc" {
+  description = "Reach Google APIs (googleapis.com, pkg.dev, gcr.io) through a Private Service Connect endpoint at google_apis_psc_address, with private DNS zones pointing those names at it. Keeps API traffic off Google's public addresses, and so out of Cloud IDS mirroring when the address is outside cloud_ids_mirror_cidr_ranges."
+  type        = bool
+  default     = false
+}
+
+variable "google_apis_psc_address" {
+  description = "Internal IPv4 address for the Private Service Connect endpoint for Google APIs. Must be outside every subnet range of the VPC. Required when enable_google_apis_psc is true."
+  type        = string
+  default     = ""
 }

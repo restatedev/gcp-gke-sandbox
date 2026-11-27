@@ -35,6 +35,7 @@ The service account or user running terraform needs:
 - **Artifact Registry** (Docker) — equivalent to ECR
 - **Cloud DNS Zones** — public and internal (optional, controlled by `enable_nuon_dns`)
 - **VPC + Subnet + Cloud NAT** — networking (optional, can use existing VPC)
+- **Compliance controls** (all off by default; enable only for installs in Restate-owned projects) — instance CPU alert policy (`enable_cpu_alert`) and email channels (`alert_notification_emails`); flow logs on a module-created subnet (`enable_flow_logs`); billed Cloud IDS endpoint with packet mirroring and a threat alert (`enable_cloud_ids`; narrow what is mirrored, and so billed, with `cloud_ids_mirror_direction`, `cloud_ids_mirror_cidr_ranges` and `cloud_ids_mirror_ip_protocols`; keep Google API traffic out of it with `enable_google_apis_psc`; alert only on serious threats with `cloud_ids_alert_min_severity`); extra notification channels such as Slack (`alert_notification_channel_ids`)
 - **Kubernetes Namespaces** — nuon_id namespace + additional
 
 ## Local Testing
@@ -62,6 +63,7 @@ See [docs/connecting-to-gke.md](docs/connecting-to-gke.md) for connecting to the
 | `maintenance_window_duration` | Length of each window, e.g. `600h` | `""` | no |
 | `maintenance_window_recurrence` | RFC 5545 RRULE; empty leaves maintenance unrestricted | `""` | no |
 | `cluster_endpoint_public_access` | Public API endpoint | `true` | no |
+| `allow_unauthenticated_rbac_bindings` | Allow RBAC bindings to `system:unauthenticated` (needed by the Pinniped Concierge) | `false` | no |
 | `network` | Existing VPC (empty = create new) | `""` | no |
 | `subnetwork` | Existing subnet (empty = create new) | `""` | no |
 | `enable_nuon_dns` | Enable Nuon DNS zones | `false` | no |

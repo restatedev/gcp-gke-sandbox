@@ -30,6 +30,19 @@ resource "google_compute_subnetwork" "gke" {
   }
 
   private_ip_google_access = true
+
+  # VPC flow logs, sampled and aggregated to keep volume low. Same settings as the
+  # gcp_psc subnet in nuon-byoc. Only reaches subnets this module creates; the
+  # install-stack subnets are owned by the install stack.
+  dynamic "log_config" {
+    for_each = var.enable_flow_logs ? [1] : []
+    content {
+      aggregation_interval = "INTERVAL_15_MIN"
+      flow_sampling        = 0.1
+      metadata             = "EXCLUDE_ALL_METADATA"
+      filter_expr          = ""
+    }
+  }
 }
 
 # Cloud Router + NAT for private GKE nodes
